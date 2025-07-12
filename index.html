@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Circle the 7s!</title>
+  <style>
+    canvas {
+      border: 1px solid #000;
+      display: block;
+      margin: 0 auto;
+    }
+    body { text-align: center; font-family: Arial; }
+    button { margin-top: 10px; font-size: 1.2em; }
+  </style>
+</head>
+<body>
+  <h2>Click to Circle the 7s!</h2>
+  <canvas id="canvas" width="900" height="600"></canvas>
+  <br>
+  <button onclick="showResults()">Submit</button>
+  <p id="results"></p>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const image = new Image();
+    const clicks = [];
+
+    image.onload = function () {
+      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    };
+
+    image.src = 'table.jpg'; // Use your hosted image or base64 data
+
+    canvas.addEventListener('click', function (e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      clicks.push({ x, y });
+      drawCircle(x, y);
+    });
+
+    function drawCircle(x, y) {
+      ctx.beginPath();
+      ctx.arc(x, y, 15, 0, 2 * Math.PI);
+      ctx.strokeStyle = 'red';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    }
+
+    function showResults() {
+      let out = "You clicked on:\n";
+      clicks.forEach((pt, i) => {
+        out += `#${i + 1}: (${Math.round(pt.x)}, ${Math.round(pt.y)})\n`;
+      });
+      document.getElementById("results").textContent = out;
+    }
+  </script>
+</body>
+</html>
