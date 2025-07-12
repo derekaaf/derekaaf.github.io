@@ -37,6 +37,7 @@
     const gridSize = 20;
     const cellSize = canvas.width / gridSize;
     const selections = new Set();
+    let startTime = null;
 
     // Define the correct positions of 7s (row_col strings)
     const answerKey = new Set([
@@ -98,6 +99,9 @@
       const col = Math.floor(x / cellSize);
       const row = Math.floor(y / cellSize);
       const key = `${row}_${col}`;
+      if (!startTime) {
+        startTime = Date.now(); // Start timing on first click
+      }
       if (selections.has(key)) {
         selections.delete(key);
         highlightCell(row, col, 'white'); // unhighlight
@@ -114,43 +118,49 @@
     });
 
     function submit() {
-      const id = document.getElementById("userID").value.trim();
-      if (!id) {
-        alert("Please enter your ID.");
-        return;
-      }
-
-      // Calculate results
-      let correct = 0;
-      let falsePositives = 0;
-      let missed = 0;
-
-      selections.forEach(s => {
-        if (answerKey.has(s)) {
-          correct++;
-        } else {
-          falsePositives++;
+        const id = document.getElementById("userID").value.trim();
+        if (!id) {
+            alert("Please enter your ID.");
+            return;
         }
-      });
 
-      missed = [...answerKey].filter(x => !selections.has(x)).length;
+        if (!startTime) {
+            alert("You haven't clicked any cells yet.");
+            return;
+        }
 
-      const results = {
-        id,
-        selected: [...selections],
-        correct,
-        falsePositives,
-        missed
-      };
+        const endTime = Date.now();
+        const timeTakenSec = ((endTime - startTime) / 1000).toFixed(2);
 
-      document.getElementById('result').textContent = JSON.stringify(results, null, 2);
+        // Calculate results
+        let correct = 0;
+        let falsePositives = 0;
+        let missed = 0;
 
-      // Save to file (client-side only for now)
-      const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `${id}.json`;
-      link.click();
+        selections.forEach(s => {
+            if (answerKey.has(s)) {
+            correct++;
+            } else {
+            falsePositives++;
+            }
+        });
+
+        missed = [...answerKey].filter(x => !selections.has(x)).length;
+
+        // Create plain text
+        let content = `ID: ${id}\nTime Taken: ${timeTakenSec}s\n\nSelected cells:\n`;
+        content += [...selections].sort().join("\n") + "\n\n";
+        content += `Correct: ${correct}\nFalse Positives: ${falsePositives}\nMissed: ${missed}\n`;
+
+        // Show on screen too
+        document.getElementById('result').textContent = content;
+
+        // Download as .txt
+        const blob = new Blob([content], { type: 'text/plain' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = `${id}.txt`;
+        link.click();
     }
   </script>
 </body>
