@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Find the 7s</title>
+  <title>Encuentra los 7s</title>
   <style>
     canvas {
       border: 1px solid black;
@@ -28,17 +28,17 @@
   </style>
 </head>
 <body>
-  <h2>Find the 7s – Click the Grid</h2>
-  <p>Enter your ID and click the grid squares where you see a 7. You have 2 minutes.</p>
+  <h2>Encuentra los 7s – Haz clic en la cuadrícula</h2>
+  <p>Ingresa tu ID y haz clic en los cuadros donde veas un 7. Tienes 2 minutos.</p>
 
-  <label for="userID">Your ID:</label>
-  <input type="text" id="userID" placeholder="e.g., test123">
+  <label for="userID">Tu ID:</label>
+  <input type="text" id="userID" placeholder="ej., prueba123">
   <br>
-  <div id="timer">Time Left: 120s</div>
+  <div id="timer">Tiempo restante: 120s</div>
 
   <canvas id="canvas" width="800" height="800"></canvas>
   <div id="timeout-message"></div>
-  <button onclick="submit()">Submit</button>
+  <button onclick="submit()">Enviar</button>
   <pre id="result"></pre>
 
   <script>
@@ -72,7 +72,7 @@
 
     let isTimeUp = false;
     let startTime = Date.now();
-    let timeLimit = 2 * 60 * 1000; // 2 minutes
+    let timeLimit = 2 * 60 * 1000; // 2 minutos
     let timeLeftWhenSubmitted = 0;
     let timerInterval;
 
@@ -81,11 +81,11 @@
       const timePassed = now - startTime;
       const timeLeft = Math.max(0, timeLimit - timePassed);
       const timeLeftSec = Math.ceil(timeLeft / 1000);
-      document.getElementById("timer").textContent = `Time Left: ${timeLeftSec}s`;
+      document.getElementById("timer").textContent = `Tiempo restante: ${timeLeftSec}s`;
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         isTimeUp = true;
-        document.getElementById("timeout-message").textContent = "Time's up! You can no longer select cells.";
+        document.getElementById("timeout-message").textContent = "¡Tiempo terminado! Ya no puedes seleccionar celdas.";
       }
     }
 
@@ -96,7 +96,7 @@
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       drawGrid();
     };
-    img.src = "table.jpg";
+    img.src = "your-grid-image.jpg";
 
     function drawGrid() {
       ctx.strokeStyle = 'rgba(0,0,0,0.3)';
@@ -145,7 +145,7 @@
     function submit() {
       const id = document.getElementById("userID").value.trim();
       if (!id) {
-        alert("Please enter your ID.");
+        alert("Por favor, ingresa tu ID.");
         return;
       }
 
@@ -162,9 +162,9 @@
       });
       let missed = [...answerKey].filter(x => !selections.has(x)).length;
 
-      let content = `ID: ${id}\nTime Left: ${timeLeftSec}s\n\nSelected cells:\n`;
+      let content = `ID: ${id}\nTiempo restante al enviar: ${timeLeftSec}s\n\nCeldas seleccionadas:\n`;
       content += [...selections].sort().join("\n") + "\n\n";
-      content += `Correct: ${correct}\nFalse Positives: ${falsePositives}\nMissed: ${missed}\n`;
+      content += `Correctas: ${correct}\nFalsos positivos: ${falsePositives}\nOmisiones: ${missed}\n`;
 
       document.getElementById('result').textContent = content;
 
