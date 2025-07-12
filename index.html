@@ -16,18 +16,28 @@
       font-size: 1.1em;
       margin-top: 10px;
     }
+    #timeout-message {
+      color: red;
+      font-weight: bold;
+    }
+    #timer {
+      font-size: 1.3em;
+      font-weight: bold;
+      margin: 10px;
+    }
   </style>
 </head>
 <body>
   <h2>Find the 7s – Click the Grid</h2>
-  <p>Enter your ID and click the grid squares where you see a 7.</p>
+  <p>Enter your ID and click the grid squares where you see a 7. You have 2 minutes.</p>
 
   <label for="userID">Your ID:</label>
   <input type="text" id="userID" placeholder="e.g., test123">
-  <br><br>
+  <br>
+  <div id="timer">Time Left: 120s</div>
 
   <canvas id="canvas" width="800" height="800"></canvas>
-
+  <div id="timeout-message"></div>
   <button onclick="submit()">Submit</button>
   <pre id="result"></pre>
 
@@ -37,39 +47,56 @@
     const gridSize = 20;
     const cellSize = canvas.width / gridSize;
     const selections = new Set();
-    let startTime = null;
-
-    // Define the correct positions of 7s (row_col strings)
     const answerKey = new Set([
-        "0_7", "0_8", "0_10", "0_17", "0_18",
-        "1_5", "1_15", "1_17", "1_18",
-        "2_5", "2_14", "2_19",
-        "3_1", "3_6", "3_9", "3_17",
-        "4_5", "4_9", "4_14", "4_18",
-        "5_1", "5_8", "5_13", "5_17",
-        "6_1", "6_6", "6_13", "6_15",
-        "7_1", "7_6", "7_8", "7_15",
-        "8_4", "8_9", "8_16",
-        "9_4", "9_6", "9_11", "9_15",
-        "10_3", "10_7", "10_14",
-        "11_2", "11_12",
-        "12_1", "12_7",
-        "13_4", "13_15",
-        "14_3", "14_11",
-        "15_0", "15_6",
-        "16_3", "16_10",
-        "17_2", "17_6",
-        "18_3", "18_13",
-        "19_3", "19_9"
+      "0_7", "0_8", "0_10", "0_17", "0_18",
+      "1_5", "1_15", "1_17", "1_18",
+      "2_5", "2_14", "2_19",
+      "3_1", "3_6", "3_9", "3_17",
+      "4_5", "4_9", "4_14", "4_18",
+      "5_1", "5_8", "5_13", "5_17",
+      "6_1", "6_6", "6_13", "6_15",
+      "7_1", "7_6", "7_8", "7_15",
+      "8_4", "8_9", "8_16",
+      "9_4", "9_6", "9_11", "9_15",
+      "10_3", "10_7", "10_14",
+      "11_2", "11_12",
+      "12_1", "12_7",
+      "13_4", "13_15",
+      "14_3", "14_11",
+      "15_0", "15_6",
+      "16_3", "16_10",
+      "17_2", "17_6",
+      "18_3", "18_13",
+      "19_3", "19_9"
     ]);
 
-    // Load background image
+    let isTimeUp = false;
+    let startTime = Date.now();
+    let timeLimit = 2 * 60 * 1000; // 2 minutes
+    let timeLeftWhenSubmitted = 0;
+    let timerInterval;
+
+    function updateTimer() {
+      const now = Date.now();
+      const timePassed = now - startTime;
+      const timeLeft = Math.max(0, timeLimit - timePassed);
+      const timeLeftSec = Math.ceil(timeLeft / 1000);
+      document.getElementById("timer").textContent = `Time Left: ${timeLeftSec}s`;
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        isTimeUp = true;
+        document.getElementById("timeout-message").textContent = "Time's up! You can no longer select cells.";
+      }
+    }
+
+    timerInterval = setInterval(updateTimer, 500);
+
     const img = new Image();
     img.onload = () => {
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       drawGrid();
     };
-    img.src = "table.jpg"; // Use hosted path or base64
+    img.src = "table.jpg";
 
     function drawGrid() {
       ctx.strokeStyle = 'rgba(0,0,0,0.3)';
@@ -93,19 +120,17 @@
     }
 
     canvas.addEventListener('click', (e) => {
+      if (isTimeUp) return;
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
       const col = Math.floor(x / cellSize);
       const row = Math.floor(y / cellSize);
       const key = `${row}_${col}`;
-      if (!startTime) {
-        startTime = Date.now(); // Start timing on first click
-      }
+
       if (selections.has(key)) {
         selections.delete(key);
-        highlightCell(row, col, 'white'); // unhighlight
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // reset
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         drawGrid();
         selections.forEach(k => {
           const [r, c] = k.split('_').map(Number);
@@ -118,51 +143,37 @@
     });
 
     function submit() {
-        const id = document.getElementById("userID").value.trim();
-        if (!id) {
-            alert("Please enter your ID.");
-            return;
-        }
+      const id = document.getElementById("userID").value.trim();
+      if (!id) {
+        alert("Please enter your ID.");
+        return;
+      }
 
-        if (!startTime) {
-            alert("You haven't clicked any cells yet.");
-            return;
-        }
+      const endTime = Date.now();
+      const timeTaken = endTime - startTime;
+      timeLeftWhenSubmitted = Math.max(0, timeLimit - timeTaken);
+      const timeLeftSec = (timeLeftWhenSubmitted / 1000).toFixed(2);
 
-        const endTime = Date.now();
-        const timeTakenSec = ((endTime - startTime) / 1000).toFixed(2);
+      let correct = 0;
+      let falsePositives = 0;
+      selections.forEach(s => {
+        if (answerKey.has(s)) correct++;
+        else falsePositives++;
+      });
+      let missed = [...answerKey].filter(x => !selections.has(x)).length;
 
-        // Calculate results
-        let correct = 0;
-        let falsePositives = 0;
-        let missed = 0;
+      let content = `ID: ${id}\nTime Left: ${timeLeftSec}s\n\nSelected cells:\n`;
+      content += [...selections].sort().join("\n") + "\n\n";
+      content += `Correct: ${correct}\nFalse Positives: ${falsePositives}\nMissed: ${missed}\n`;
 
-        selections.forEach(s => {
-            if (answerKey.has(s)) {
-            correct++;
-            } else {
-            falsePositives++;
-            }
-        });
+      document.getElementById('result').textContent = content;
 
-        missed = [...answerKey].filter(x => !selections.has(x)).length;
-
-        // Create plain text
-        let content = `ID: ${id}\nTime Taken: ${timeTakenSec}s\n\nSelected cells:\n`;
-        content += [...selections].sort().join("\n") + "\n\n";
-        content += `Correct: ${correct}\nFalse Positives: ${falsePositives}\nMissed: ${missed}\n`;
-
-        // Show on screen too
-        document.getElementById('result').textContent = content;
-
-        // Download as .txt
-        const blob = new Blob([content], { type: 'text/plain' });
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = `${id}.txt`;
-        link.click();
+      const blob = new Blob([content], { type: 'text/plain' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${id}.txt`;
+      link.click();
     }
   </script>
 </body>
 </html>
-
