@@ -1,60 +1,158 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Circle the 7s!</title>
+  <title>Find the 7s</title>
   <style>
     canvas {
-      border: 1px solid #000;
+      border: 1px solid black;
       display: block;
-      margin: 0 auto;
+      margin: 10px auto;
     }
-    body { text-align: center; font-family: Arial; }
-    button { margin-top: 10px; font-size: 1.2em; }
+    body {
+      font-family: Arial;
+      text-align: center;
+    }
+    input, button {
+      font-size: 1.1em;
+      margin-top: 10px;
+    }
   </style>
 </head>
 <body>
-  <h2>Click to Circle the 7s!</h2>
-  <canvas id="canvas" width="900" height="600"></canvas>
-  <br>
-  <button onclick="showResults()">Submit</button>
-  <p id="results"></p>
+  <h2>Find the 7s – Click the Grid</h2>
+  <p>Enter your ID and click the grid squares where you see a 7.</p>
+
+  <label for="userID">Your ID:</label>
+  <input type="text" id="userID" placeholder="e.g., test123">
+  <br><br>
+
+  <canvas id="canvas" width="800" height="800"></canvas>
+
+  <button onclick="submit()">Submit</button>
+  <pre id="result"></pre>
 
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const image = new Image();
-    const clicks = [];
+    const gridSize = 20;
+    const cellSize = canvas.width / gridSize;
+    const selections = new Set();
 
-    image.onload = function () {
-      ctx.drawImage(image, 0, 0, canvas.width, canvas.height);
+    // Define the correct positions of 7s (row_col strings)
+    const answerKey = new Set([
+        "0_7", "0_8", "0_10", "0_17", "0_18",
+        "1_5", "1_15", "1_17", "1_18",
+        "2_5", "2_14", "2_19",
+        "3_1", "3_6", "3_9", "3_17",
+        "4_5", "4_9", "4_14", "4_18",
+        "5_1", "5_8", "5_13", "5_17",
+        "6_1", "6_6", "6_13", "6_15",
+        "7_1", "7_6", "7_8", "7_15",
+        "8_4", "8_9", "8_16",
+        "9_4", "9_6", "9_11", "9_15",
+        "10_3", "10_7", "10_14",
+        "11_2", "11_12",
+        "12_1", "12_7",
+        "13_4", "13_15",
+        "14_3", "14_11",
+        "15_0", "15_6",
+        "16_3", "16_10",
+        "17_2", "17_6",
+        "18_3", "18_13",
+        "19_3", "19_9"
+    ]);
+
+    // Load background image
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      drawGrid();
     };
+    img.src = "table.jpg"; // Use hosted path or base64
 
-    image.src = 'table.jpg'; // Use your hosted image or base64 data
+    function drawGrid() {
+      ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+      for (let i = 1; i < gridSize; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * cellSize, 0);
+        ctx.lineTo(i * cellSize, canvas.height);
+        ctx.stroke();
 
-    canvas.addEventListener('click', function (e) {
+        ctx.beginPath();
+        ctx.moveTo(0, i * cellSize);
+        ctx.lineTo(canvas.width, i * cellSize);
+        ctx.stroke();
+      }
+    }
+
+    function highlightCell(row, col, color = 'red') {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 3;
+      ctx.strokeRect(col * cellSize, row * cellSize, cellSize, cellSize);
+    }
+
+    canvas.addEventListener('click', (e) => {
       const rect = canvas.getBoundingClientRect();
       const x = e.clientX - rect.left;
       const y = e.clientY - rect.top;
-
-      clicks.push({ x, y });
-      drawCircle(x, y);
+      const col = Math.floor(x / cellSize);
+      const row = Math.floor(y / cellSize);
+      const key = `${row}_${col}`;
+      if (selections.has(key)) {
+        selections.delete(key);
+        highlightCell(row, col, 'white'); // unhighlight
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height); // reset
+        drawGrid();
+        selections.forEach(k => {
+          const [r, c] = k.split('_').map(Number);
+          highlightCell(r, c, 'red');
+        });
+      } else {
+        selections.add(key);
+        highlightCell(row, col, 'red');
+      }
     });
 
-    function drawCircle(x, y) {
-      ctx.beginPath();
-      ctx.arc(x, y, 15, 0, 2 * Math.PI);
-      ctx.strokeStyle = 'red';
-      ctx.lineWidth = 3;
-      ctx.stroke();
-    }
+    function submit() {
+      const id = document.getElementById("userID").value.trim();
+      if (!id) {
+        alert("Please enter your ID.");
+        return;
+      }
 
-    function showResults() {
-      let out = "You clicked on:\n";
-      clicks.forEach((pt, i) => {
-        out += `#${i + 1}: (${Math.round(pt.x)}, ${Math.round(pt.y)})\n`;
+      // Calculate results
+      let correct = 0;
+      let falsePositives = 0;
+      let missed = 0;
+
+      selections.forEach(s => {
+        if (answerKey.has(s)) {
+          correct++;
+        } else {
+          falsePositives++;
+        }
       });
-      document.getElementById("results").textContent = out;
+
+      missed = [...answerKey].filter(x => !selections.has(x)).length;
+
+      const results = {
+        id,
+        selected: [...selections],
+        correct,
+        falsePositives,
+        missed
+      };
+
+      document.getElementById('result').textContent = JSON.stringify(results, null, 2);
+
+      // Save to file (client-side only for now)
+      const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${id}.json`;
+      link.click();
     }
   </script>
 </body>
 </html>
+
