@@ -29,7 +29,7 @@
 </head>
 <body>
   <h2>Encuentra los 7s – Haz clic en la cuadrícula</h2>
-  <p>Ingresa tu ID y haz clic en los cuadros donde veas un 7. Tienes 2 minutos.</p>
+  <p>Ingresa tu ID de participante y haz clic en los cuadros donde veas un 7. Tienes 2 minutos.</p>
 
   <label for="userID">Tu ID:</label>
   <input type="text" id="userID" placeholder="ej., prueba123">
@@ -85,7 +85,7 @@
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
         isTimeUp = true;
-        document.getElementById("timeout-message").textContent = "¡Tiempo terminado! Ya no puedes seleccionar celdas.";
+        document.getElementById("timeout-message").textContent = "¡Se acabó el tiempo! Ya no puedes seleccionar celdas.";
       }
     }
 
@@ -96,7 +96,7 @@
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
       drawGrid();
     };
-    img.src = "your-grid-image.jpg";
+    img.src = "table.jpg";
 
     function drawGrid() {
       ctx.strokeStyle = 'rgba(0,0,0,0.3)';
@@ -145,7 +145,7 @@
     function submit() {
       const id = document.getElementById("userID").value.trim();
       if (!id) {
-        alert("Por favor, ingresa tu ID.");
+        alert("Por favor, ingresa tu ID de participante.");
         return;
       }
 
